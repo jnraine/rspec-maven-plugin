@@ -1,5 +1,8 @@
 package org.codehaus.mojo.rspec;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Scanner;
@@ -47,14 +50,39 @@ public final class RspecRunnerMojo extends AbstractRspecMojo {
 			String msg = "RSpec tests failed. See '" + reportFile()
 					+ "' for details.";
 			getLog().warn(msg);
+			getLog().warn(progressString());
 			if (!ignoreFailure) {
 				throw new MojoFailureException(msg);
 			}
 		} else {
 			String msg = "RSpec tests successful. See '" + reportFile()
-					+ "' for details.";
+					+ "' for full details.";
 			getLog().info(msg);
+			getLog().info(progressString());
 		}
+	}
+
+	private String progressString() {
+		try {
+			return readFileAsString(progressFile());
+		} catch (IOException e) {
+			getLog().error("An error occurred while reading progress file");
+			getLog().error(e);
+			return "";
+		}
+	}
+
+	private String readFileAsString(String filePath) throws java.io.IOException{
+		StringBuffer fileData = new StringBuffer(1000);
+		BufferedReader reader = new BufferedReader(
+				new FileReader(filePath));
+		char[] buf = new char[1024];
+		int numRead=0;
+		while((numRead=reader.read(buf)) != -1){
+			fileData.append(buf, 0, numRead);
+		}
+		reader.close();
+		return fileData.toString();
 	}
 
 	private boolean run(final Ruby runtime, final String script) {
@@ -62,7 +90,7 @@ public final class RspecRunnerMojo extends AbstractRspecMojo {
 		RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
 		IRubyObject o = evaler.eval(runtime, script.toString());
 		boolean result = ((RubyBoolean) JavaEmbedUtils.invokeMethod(runtime, o,
-				"run", new Object[] { sourceDirectory, requiredModules, reportFile() },
+				"run", new Object[] { sourceDirectory, requiredModules, reportFile(), progressFile() },
 				(Class<?>) RubyBoolean.class)).isTrue();
 		return result;
 	}
@@ -80,8 +108,11 @@ public final class RspecRunnerMojo extends AbstractRspecMojo {
 	}
 
 	private String reportFile() {
-		String reportFile = outputDirectory + "/" + reportName;
-		return reportFile;
+		return outputDirectory + "/" + reportName + ".html";
+	}
+
+	private String progressFile() {
+		return outputDirectory + "/" + reportName + ".txt";
 	}
 
 	private Ruby ruby() {

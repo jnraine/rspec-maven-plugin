@@ -39,7 +39,7 @@ public abstract class AbstractRspecMojo extends AbstractMojo {
 	/**
 	 * The name of the RSpec report (optional, defaults to "rspec_report.html")
 	 * 
-	 * @parameter expression="rspec_report.html"
+	 * @parameter expression="rspec_report"
 	 */
 	protected String reportName;
 
